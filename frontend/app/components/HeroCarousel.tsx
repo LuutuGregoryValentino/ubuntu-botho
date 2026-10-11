@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 interface HeroImage {
   id: string;
@@ -9,10 +10,33 @@ interface HeroImage {
   caption?: string;
 }
 
-export default function HeroCarousel({ images }: { images: HeroImage[] }) {
+export default function HeroCarousel() {
+  const [images, setImages] = useState<HeroImage[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Fallback if no images have been pinned yet from the admin dashboard
+  useEffect(() => {
+    async function fetchPinnedImages() {
+      try {
+        const { data, error } = await supabase
+          .from('images')
+          .select('id, r2_url, caption')
+          .eq('is_pinned', true)
+          .order('display_order', { ascending: true })
+          .limit(10);
+
+        if (!error && data && data.length > 0) {
+          setImages(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch hero images:', err);
+      }
+    }
+
+    fetchPinnedImages();
+  }, []);
+
+  // Fallback if no images are pinned yet
   const displayImages = images.length > 0 ? images : [
     { id: 'fallback', r2_url: '', caption: 'Ubuntu-Botho Leadership Collective' }
   ];
@@ -26,8 +50,8 @@ export default function HeroCarousel({ images }: { images: HeroImage[] }) {
   }, [displayImages.length]);
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[550px] bg-navy flex items-center justify-center overflow-hidden">
-      {/* Background Slideshow / Pinned Images */}
+    <section className="relative w-full h-[85vh] min-h-[550px] bg-[#1E2A38] flex items-center justify-center overflow-hidden">
+      {/* Background Slideshow */}
       {displayImages.map((img, index) => (
         <div
           key={img.id}
@@ -46,7 +70,7 @@ export default function HeroCarousel({ images }: { images: HeroImage[] }) {
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#1E2A38] to-[#C85A32]/40" />
           )}
-          {/*subtle dark gradient for text readability */}
+                    {/*subtle dark gradient for text readability */}
           <div className="absolute inset-0 bg-black/40" />
         </div>
       ))}
